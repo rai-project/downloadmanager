@@ -1,0 +1,15 @@
+package: github.com/rai-project/downloadmanager
+import:
+- package: github.com/Unknwon/com
+  version: ~1.0.0
+- package: github.com/hashicorp/go-getter
+- package: github.com/k0kubun/pp
+  version: ~2.3.0
+- package: github.com/patrickmn/go-cache
+  version: ~2.0.0
+- package: github.com/pkg/errors
+  version: ~0.8.0
+- package: github.com/rai-project/config
+- package: github.com/rai-project/logger
+- package: github.com/sirupsen/logrus
+  version: ^1.0.0
