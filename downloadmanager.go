@@ -8,7 +8,6 @@ import (
 
 	"github.com/Unknwon/com"
 	"github.com/hashicorp/go-getter"
-	"github.com/k0kubun/pp"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rai-project/config"
@@ -56,11 +55,10 @@ func Download(url, targetDir string) (string, error) {
 		}
 		os.RemoveAll(filePath)
 	}
-	pp.Println(filePath)
 
 	log.WithField("url", url).
 		WithField("targetDir", targetDir).
-		Debug("downloading data for prediction")
+		Debug("downloading data")
 
 	pwd := targetDir
 	if com.IsFile(targetDir) {
