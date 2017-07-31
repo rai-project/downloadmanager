@@ -17,7 +17,8 @@ func cleanup(s string) string {
 	return strings.Replace(s, ":", "_", -1)
 }
 
-func Download(url, targetDir string) (string, error) {
+func DownloadFile(url, targetFilePath string) (string, error) {
+
 	if url == "" {
 		return "", errors.New("invalid empty url")
 	}
@@ -30,10 +31,54 @@ func Download(url, targetDir string) (string, error) {
 		}
 	}
 
-	_, err := getter.Detect(url, targetDir, getter.Detectors)
+	_, err := getter.Detect(url, targetFilePath, getter.Detectors)
 	if err != nil {
 		return "", err
 	}
+
+	targetDir := cleanup(filepath.Dir(targetFilePath))
+	if !com.IsDir(targetDir) {
+		err := os.MkdirAll(targetDir, 0700)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to create %v directory", targetDir)
+		}
+	}
+
+	if com.IsFile(targetFilePath) {
+		if config.IsDebug {
+			log.Debugf("reusing the data in %v", targetFilePath)
+			return targetFilePath, nil
+		}
+		os.RemoveAll(targetFilePath)
+	}
+
+	log.WithField("url", url).
+		WithField("target", targetFilePath).
+		Debug("downloading data")
+
+	pwd := targetDir
+	if com.IsFile(targetDir) {
+		pwd = filepath.Dir(targetDir)
+	}
+
+	client := &getter.Client{
+		Src:           url,
+		Dst:           targetFilePath,
+		Pwd:           pwd,
+		Mode:          getter.ClientModeFile,
+		Decompressors: map[string]getter.Decompressor{}, // do not decompress
+	}
+	if err := client.Get(); err != nil {
+		return "", err
+	}
+
+	// Set the value of the key url to targetDir, with the default expiration time
+	cache.Set(url, targetFilePath, gocache.DefaultExpiration)
+
+	return targetFilePath, nil
+}
+
+func DownloadInto(url, targetDir string) (string, error) {
 
 	targetDir = cleanup(targetDir)
 	if !com.IsDir(targetDir) {
@@ -47,36 +92,15 @@ func Download(url, targetDir string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to parse url %v", url)
 	}
-	filePath := filepath.Join(targetDir, filepath.Base(urlParsed.Path))
-	if com.IsFile(filePath) || com.IsDir(filePath) {
-		if config.IsDebug {
-			log.Debugf("reusing the data in %v", filePath)
-			return filePath, nil
-		}
-		os.RemoveAll(filePath)
+	t := filepath.Join(targetDir, filepath.Base(urlParsed.Path))
+	filePath, err := DownloadFile(url, t)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to download url %v into %v", url, t)
 	}
 
-	log.WithField("url", url).
-		WithField("targetDir", targetDir).
-		Debug("downloading data")
-
-	pwd := targetDir
-	if com.IsFile(targetDir) {
-		pwd = filepath.Dir(targetDir)
-	}
-
-	client := &getter.Client{
-		Src:           url,
-		Dst:           filePath,
-		Pwd:           pwd,
-		Mode:          getter.ClientModeFile,
-		Decompressors: map[string]getter.Decompressor{}, // do not decompress
-	}
-	if err := client.Get(); err != nil {
+	if err := unarchive(targetDir, filePath); err != nil {
 		return "", err
 	}
-
-	unarchive(targetDir, filePath)
 
 	// Set the value of the key url to targetDir, with the default expiration time
 	cache.Set(url, filePath, gocache.DefaultExpiration)
