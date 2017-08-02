@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/rai-project/tracer"
+
 	"github.com/Unknwon/com"
 	"github.com/hashicorp/go-getter"
 	gocache "github.com/patrickmn/go-cache"
@@ -18,6 +21,12 @@ func cleanup(s string) string {
 }
 
 func DownloadFile(url, targetFilePath string) (string, error) {
+
+	span := tracer.StartSpan("downloading file", opentracing.Tags{
+		"url":    url,
+		"target": targetFilePath,
+	})
+	defer span.Finish()
 
 	if url == "" {
 		return "", errors.New("invalid empty url")
