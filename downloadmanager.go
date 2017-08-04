@@ -19,7 +19,10 @@ import (
 )
 
 func cleanup(s string) string {
-	return strings.Replace(s, ":", "_", -1)
+	return strings.Replace(
+		strings.Replace(s, " ", "_", -1),
+		":", "_", -1,
+	)
 }
 
 func DownloadFile(ctx context.Context, url, targetFilePath string) (string, error) {
