@@ -9,7 +9,6 @@ import (
 	context "golang.org/x/net/context"
 
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/rai-project/tracer"
 
 	"github.com/Unknwon/com"
 	"github.com/hashicorp/go-getter"
@@ -33,12 +32,6 @@ func DownloadFile(ctx context.Context, url, targetFilePath string) (string, erro
 		ctx = newCtx
 		defer span.Finish()
 	}
-
-	span := tracer.StartSpan("downloading file", opentracing.Tags{
-		"url":    url,
-		"target": targetFilePath,
-	})
-	defer span.Finish()
 
 	if url == "" {
 		return "", errors.New("invalid empty url")
