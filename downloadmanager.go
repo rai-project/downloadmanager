@@ -119,7 +119,7 @@ func DownloadInto(ctx context.Context, url, targetDir string) (string, error) {
 		return "", errors.Wrapf(err, "unable to download url %v into %v", url, t)
 	}
 
-	if err := unarchive(targetDir, filePath); err != nil {
+	if err := Unarchive(targetDir, filePath); err != nil {
 		return "", err
 	}
 
@@ -129,7 +129,7 @@ func DownloadInto(ctx context.Context, url, targetDir string) (string, error) {
 	return filePath, nil
 }
 
-func unarchive(targetDir, filePath string) error {
+func Unarchive(targetDir, filePath string) error {
 	matchingLen := 0
 	unArchiver := ""
 	for k := range getter.Decompressors {
