@@ -6,10 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	context "golang.org/x/net/context"
-
-	opentracing "github.com/opentracing/opentracing-go"
-
 	"github.com/Unknwon/com"
 	"github.com/hashicorp/go-getter"
 	gocache "github.com/patrickmn/go-cache"
@@ -24,15 +20,7 @@ func cleanup(s string) string {
 	)
 }
 
-func DownloadFile(ctx context.Context, url, targetFilePath string) (string, error) {
-
-	if span, newCtx := opentracing.StartSpanFromContext(ctx, "DownloadFile"); span != nil {
-		span.SetTag("url", url)
-		span.SetTag("traget_file", targetFilePath)
-		ctx = newCtx
-		defer span.Finish()
-	}
-
+func DownloadFile(url, targetFilePath string) (string, error) {
 	if url == "" {
 		return "", errors.New("invalid empty url")
 	}
@@ -92,15 +80,7 @@ func DownloadFile(ctx context.Context, url, targetFilePath string) (string, erro
 	return targetFilePath, nil
 }
 
-func DownloadInto(ctx context.Context, url, targetDir string) (string, error) {
-
-	if span, newCtx := opentracing.StartSpanFromContext(ctx, "DownloadURL"); span != nil {
-		span.SetTag("url", url)
-		span.SetTag("traget_dir", targetDir)
-		ctx = newCtx
-		defer span.Finish()
-	}
-
+func DownloadInto(url, targetDir string) (string, error) {
 	targetDir = cleanup(targetDir)
 	if !com.IsDir(targetDir) {
 		err := os.MkdirAll(targetDir, 0700)
@@ -114,7 +94,7 @@ func DownloadInto(ctx context.Context, url, targetDir string) (string, error) {
 		return "", errors.Wrapf(err, "unable to parse url %v", url)
 	}
 	t := filepath.Join(targetDir, filepath.Base(urlParsed.Path))
-	filePath, err := DownloadFile(ctx, url, t)
+	filePath, err := DownloadFile(url, t)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to download url %v into %v", url, t)
 	}
