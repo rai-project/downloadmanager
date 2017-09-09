@@ -11,6 +11,7 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rai-project/config"
+	context "golang.org/x/net/context"
 )
 
 func cleanup(s string) string {
@@ -20,7 +21,7 @@ func cleanup(s string) string {
 	)
 }
 
-func DownloadFile(url, targetFilePath string) (string, error) {
+func DownloadFile(ctx context.Context, url, targetFilePath string) (string, error) {
 	if url == "" {
 		return "", errors.New("invalid empty url")
 	}
@@ -80,7 +81,7 @@ func DownloadFile(url, targetFilePath string) (string, error) {
 	return targetFilePath, nil
 }
 
-func DownloadInto(url, targetDir string) (string, error) {
+func DownloadInto(ctx context.Context, url, targetDir string) (string, error) {
 	targetDir = cleanup(targetDir)
 	if !com.IsDir(targetDir) {
 		err := os.MkdirAll(targetDir, 0700)
@@ -94,7 +95,7 @@ func DownloadInto(url, targetDir string) (string, error) {
 		return "", errors.Wrapf(err, "unable to parse url %v", url)
 	}
 	t := filepath.Join(targetDir, filepath.Base(urlParsed.Path))
-	filePath, err := DownloadFile(url, t)
+	filePath, err := DownloadFile(ctx, url, t)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to download url %v into %v", url, t)
 	}
