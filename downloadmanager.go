@@ -11,6 +11,7 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rai-project/config"
+	"github.com/rai-project/utils"
 	context "golang.org/x/net/context"
 )
 
@@ -21,16 +22,21 @@ func cleanup(s string) string {
 	)
 }
 
-func DownloadFile(ctx context.Context, url, targetFilePath string) (string, error) {
+func DownloadFile(ctx context.Context, url, targetFilePath string, opts ...Option) (string, error) {
+
+	options := NewOptions(append([]Option{Context(ctx)}, opts...)...)
+
 	if url == "" {
 		return "", errors.New("invalid empty url")
 	}
 
-	// Get the string associated with the key url from the cache
-	if val, found := cache.Get(url); found {
-		s, ok := val.(string)
-		if ok {
-			return s, nil
+	if options.cache {
+		// Get the string associated with the key url from the cache
+		if val, found := cache.Get(url); found {
+			s, ok := val.(string)
+			if ok {
+				return s, nil
+			}
 		}
 	}
 
@@ -75,13 +81,24 @@ func DownloadFile(ctx context.Context, url, targetFilePath string) (string, erro
 		return "", err
 	}
 
-	// Set the value of the key url to targetDir, with the default expiration time
-	cache.Set(url, targetFilePath, gocache.DefaultExpiration)
+	// validate checksum
+	if options.md5Sum != "" {
+		if ok, err := utils.MD5Sum.CheckFile(targetFilePath, options.md5Sum); !ok {
+			return "", err
+		}
+	}
+
+	if options.cache {
+		// Set the value of the key url to targetDir, with the default expiration time
+		cache.Set(url, targetFilePath, gocache.DefaultExpiration)
+	}
 
 	return targetFilePath, nil
 }
 
-func DownloadInto(ctx context.Context, url, targetDir string) (string, error) {
+func DownloadInto(ctx context.Context, url, targetDir string, opts ...Option) (string, error) {
+	options := NewOptions(append([]Option{Context(ctx)}, opts...)...)
+
 	targetDir = cleanup(targetDir)
 	if !com.IsDir(targetDir) {
 		err := os.MkdirAll(targetDir, 0700)
@@ -95,7 +112,7 @@ func DownloadInto(ctx context.Context, url, targetDir string) (string, error) {
 		return "", errors.Wrapf(err, "unable to parse url %v", url)
 	}
 	t := filepath.Join(targetDir, filepath.Base(urlParsed.Path))
-	filePath, err := DownloadFile(ctx, url, t)
+	filePath, err := DownloadFile(ctx, url, t, WithOptions(options))
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to download url %v into %v", url, t)
 	}
@@ -104,8 +121,10 @@ func DownloadInto(ctx context.Context, url, targetDir string) (string, error) {
 		return "", err
 	}
 
-	// Set the value of the key url to targetDir, with the default expiration time
-	cache.Set(url, filePath, gocache.DefaultExpiration)
+	if options.cache {
+		// Set the value of the key url to targetDir, with the default expiration time
+		cache.Set(url, filePath, gocache.DefaultExpiration)
+	}
 
 	return filePath, nil
 }
