@@ -10,6 +10,10 @@ type Options struct {
 
 type Option func(*Options)
 
+var (
+	DefaultCachePolicy = true
+)
+
 func Context(c context.Context) Option {
 	return func(o *Options) {
 		o.ctx = c
@@ -38,7 +42,7 @@ func NewOptions(opts ...Option) *Options {
 	options := &Options{
 		ctx:    context.Background(),
 		md5Sum: "",
-		cache:  true,
+		cache:  DefaultCachePolicy,
 	}
 
 	for _, o := range opts {

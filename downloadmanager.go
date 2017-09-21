@@ -10,9 +10,7 @@ import (
 	"github.com/hashicorp/go-getter"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
-	"github.com/rai-project/config"
 	"github.com/rai-project/utils"
-	context "golang.org/x/net/context"
 )
 
 func cleanup(s string) string {
@@ -22,9 +20,9 @@ func cleanup(s string) string {
 	)
 }
 
-func DownloadFile(ctx context.Context, url, targetFilePath string, opts ...Option) (string, error) {
+func DownloadFile(url, targetFilePath string, opts ...Option) (string, error) {
 
-	options := NewOptions(append([]Option{Context(ctx)}, opts...)...)
+	options := NewOptions(opts...)
 
 	if url == "" {
 		return "", errors.New("invalid empty url")
@@ -53,10 +51,15 @@ func DownloadFile(ctx context.Context, url, targetFilePath string, opts ...Optio
 		}
 	}
 
-	if com.IsFile(targetFilePath) {
-		if config.IsDebug {
-			log.Debugf("reusing the data in %v", targetFilePath)
-			return targetFilePath, nil
+	if options.cache && com.IsFile(targetFilePath) {
+		if options.md5Sum != "" {
+			if ok, err := utils.MD5Sum.CheckFile(targetFilePath, options.md5Sum); err == nil && ok {
+				if options.cache {
+					// Set the value of the key url to targetDir, with the default expiration time
+					cache.Set(url, targetFilePath, gocache.DefaultExpiration)
+				}
+				return targetFilePath, nil
+			}
 		}
 		os.RemoveAll(targetFilePath)
 	}
@@ -96,8 +99,8 @@ func DownloadFile(ctx context.Context, url, targetFilePath string, opts ...Optio
 	return targetFilePath, nil
 }
 
-func DownloadInto(ctx context.Context, url, targetDir string, opts ...Option) (string, error) {
-	options := NewOptions(append([]Option{Context(ctx)}, opts...)...)
+func DownloadInto(url, targetDir string, opts ...Option) (string, error) {
+	options := NewOptions(opts...)
 
 	targetDir = cleanup(targetDir)
 	if !com.IsDir(targetDir) {
@@ -112,7 +115,7 @@ func DownloadInto(ctx context.Context, url, targetDir string, opts ...Option) (s
 		return "", errors.Wrapf(err, "unable to parse url %v", url)
 	}
 	t := filepath.Join(targetDir, filepath.Base(urlParsed.Path))
-	filePath, err := DownloadFile(ctx, url, t, WithOptions(options))
+	filePath, err := DownloadFile(url, t, WithOptions(options))
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to download url %v into %v", url, t)
 	}
