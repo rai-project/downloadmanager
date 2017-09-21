@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/k0kubun/pp"
-
 	"github.com/Unknwon/com"
 	"github.com/hashicorp/go-getter"
 	gocache "github.com/patrickmn/go-cache"
@@ -86,8 +84,6 @@ func DownloadFile(url, targetFilePath string, opts ...Option) (string, error) {
 	// validate checksum
 	if options.md5Sum != "" {
 		if ok, err := utils.MD5Sum.CheckFile(targetFilePath, options.md5Sum); !ok {
-			pp.Println("Checksum failed!\n\n")
-			pp.Println(err)
 			os.RemoveAll(targetFilePath)
 			return "", err
 		}
