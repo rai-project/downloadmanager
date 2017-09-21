@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/k0kubun/pp"
+
 	"github.com/Unknwon/com"
 	"github.com/hashicorp/go-getter"
 	gocache "github.com/patrickmn/go-cache"
@@ -21,7 +23,6 @@ func cleanup(s string) string {
 }
 
 func DownloadFile(url, targetFilePath string, opts ...Option) (string, error) {
-
 	options := NewOptions(opts...)
 
 	if url == "" {
@@ -54,10 +55,8 @@ func DownloadFile(url, targetFilePath string, opts ...Option) (string, error) {
 	if options.cache && com.IsFile(targetFilePath) {
 		if options.md5Sum != "" {
 			if ok, err := utils.MD5Sum.CheckFile(targetFilePath, options.md5Sum); err == nil && ok {
-				if options.cache {
-					// Set the value of the key url to targetDir, with the default expiration time
-					cache.Set(url, targetFilePath, gocache.DefaultExpiration)
-				}
+				// Set the value of the key url to targetDir, with the default expiration time
+				cache.Set(url, targetFilePath, gocache.DefaultExpiration)
 				return targetFilePath, nil
 			}
 		}
@@ -87,6 +86,9 @@ func DownloadFile(url, targetFilePath string, opts ...Option) (string, error) {
 	// validate checksum
 	if options.md5Sum != "" {
 		if ok, err := utils.MD5Sum.CheckFile(targetFilePath, options.md5Sum); !ok {
+			pp.Println("Checksum failed!\n\n")
+			pp.Println(err)
+			os.RemoveAll(targetFilePath)
 			return "", err
 		}
 	}
@@ -144,5 +146,6 @@ func Unarchive(targetDir, filePath string) error {
 	if decompressor, ok := getter.Decompressors[unArchiver]; ok {
 		decompressor.Decompress(targetDir, filePath, true)
 	}
+
 	return nil
 }
