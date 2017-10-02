@@ -30,9 +30,11 @@ func init() {
 		// purges expired items every DefaultCacheCleanupInterval
 		cache = gocache.New(DefaultCacheExpiration, DefaultCacheCleanupInterval)
 
-		defer utils.Every(DefaultCacheSaveInterval, func() {
-			cache.SaveFile(cacheFile)
-		})
+		defer func() {
+			go utils.Every(DefaultCacheSaveInterval, func() {
+				cache.SaveFile(cacheFile)
+			})
+		}()
 
 		if !com.IsDir(cacheDir) {
 			if err := os.MkdirAll(cacheDir, 0700); err != nil {
