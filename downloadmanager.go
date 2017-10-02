@@ -1,6 +1,7 @@
 package downloadmanager
 
 import (
+	"fmt"
 	urlpkg "net/url"
 	"os"
 	"path/filepath"
@@ -20,6 +21,15 @@ func cleanup(s string) string {
 	)
 }
 
+type cacheKey struct {
+	url            string
+	targetFilePath string
+}
+
+func (c cacheKey) String() string {
+	return fmt.Sprintf("key:%v,path:%v", c.url, c.targetFilePath)
+}
+
 func DownloadFile(url, targetFilePath string, opts ...Option) (string, error) {
 	options := NewOptions(opts...)
 
@@ -27,11 +37,13 @@ func DownloadFile(url, targetFilePath string, opts ...Option) (string, error) {
 		return "", errors.New("invalid empty url")
 	}
 
+	cacheKey := cacheKey{url: url, targetFilePath: targetFilePath}.String()
+
 	if options.cache {
 		// Get the string associated with the key url from the cache
-		if val, found := cache.Get(url); found {
+		if val, found := cache.Get(cacheKey); found {
 			s, ok := val.(string)
-			if ok {
+			if ok && com.IsFile(targetFilePath) {
 				return s, nil
 			}
 		}
@@ -50,11 +62,12 @@ func DownloadFile(url, targetFilePath string, opts ...Option) (string, error) {
 		}
 	}
 
+	// file already exists, but is not in the cache
 	if options.cache && com.IsFile(targetFilePath) {
 		if options.md5Sum != "" {
 			if ok, err := utils.MD5Sum.CheckFile(targetFilePath, options.md5Sum); err == nil && ok {
 				// Set the value of the key url to targetDir, with the default expiration time
-				cache.Set(url, targetFilePath, gocache.DefaultExpiration)
+				cache.Set(cacheKey, targetFilePath, gocache.DefaultExpiration)
 				return targetFilePath, nil
 			}
 		}
@@ -91,7 +104,7 @@ func DownloadFile(url, targetFilePath string, opts ...Option) (string, error) {
 
 	if options.cache {
 		// Set the value of the key url to targetDir, with the default expiration time
-		cache.Set(url, targetFilePath, gocache.DefaultExpiration)
+		cache.Set(cacheKey, targetFilePath, gocache.DefaultExpiration)
 	}
 
 	return targetFilePath, nil
@@ -124,7 +137,8 @@ func DownloadInto(url, targetDir string, opts ...Option) (string, error) {
 
 	if options.cache {
 		// Set the value of the key url to targetDir, with the default expiration time
-		cache.Set(url, filePath, gocache.DefaultExpiration)
+		cacheKey := cacheKey{url: url, targetFilePath: filePath}.String()
+		cache.Set(cacheKey, filePath, gocache.DefaultExpiration)
 	}
 
 	return filePath, nil
