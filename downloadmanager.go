@@ -64,6 +64,10 @@ func DownloadFile(url, targetFilePath string, opts ...Option) (string, error) {
 
 	// file already exists, but is not in the cache
 	if options.cache && com.IsFile(targetFilePath) {
+		if options.checkMd5Sum == false {
+			cache.Set(cacheKey, targetFilePath, gocache.DefaultExpiration)
+			return targetFilePath, nil
+		}
 		if options.md5Sum != "" {
 			if ok, err := utils.MD5Sum.CheckFile(targetFilePath, options.md5Sum); err == nil && ok {
 				// Set the value of the key url to targetDir, with the default expiration time
@@ -95,7 +99,7 @@ func DownloadFile(url, targetFilePath string, opts ...Option) (string, error) {
 	}
 
 	// validate checksum
-	if options.md5Sum != "" {
+	if options.md5Sum != "" && options.checkMd5Sum {
 		if ok, err := utils.MD5Sum.CheckFile(targetFilePath, options.md5Sum); !ok {
 			os.RemoveAll(targetFilePath)
 			return "", err

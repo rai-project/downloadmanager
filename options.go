@@ -3,9 +3,10 @@ package downloadmanager
 import context "golang.org/x/net/context"
 
 type Options struct {
-	ctx    context.Context
-	md5Sum string
-	cache  bool
+	ctx         context.Context
+	checkMd5Sum bool
+	md5Sum      string
+	cache       bool
 }
 
 type Option func(*Options)
@@ -17,6 +18,12 @@ var (
 func Context(c context.Context) Option {
 	return func(o *Options) {
 		o.ctx = c
+	}
+}
+
+func CheckMD5Sum(b bool) Option {
+	return func(o *Options) {
+		o.checkMd5Sum = b
 	}
 }
 
