@@ -1,6 +1,6 @@
 package downloadmanager
 
-import context "golang.org/x/net/context"
+import context "context"
 
 type Options struct {
 	ctx         context.Context
