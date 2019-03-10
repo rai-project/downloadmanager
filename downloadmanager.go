@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/Unknwon/com"
-	"github.com/hashicorp/go-getter"
+	getter "github.com/hashicorp/go-getter"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/rai-project/utils"
