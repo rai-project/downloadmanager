@@ -29,6 +29,9 @@ func CheckMD5Sum(b bool) Option {
 
 func MD5Sum(s string) Option {
 	return func(o *Options) {
+		if s == "" {
+			return
+		}
 		o.md5Sum = s
 	}
 }
